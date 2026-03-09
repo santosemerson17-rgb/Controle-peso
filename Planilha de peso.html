@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Controle de Peso</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:linear-gradient(135deg,#4facfe,#00f2fe);
+margin:0;
+padding:20px;
+text-align:center;
+}
+
+h1{
+color:white;
+}
+
+.card{
+background:white;
+border-radius:15px;
+padding:20px;
+margin:20px auto;
+max-width:500px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+input{
+padding:10px;
+margin:5px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+button{
+padding:10px 15px;
+border:none;
+background:#4CAF50;
+color:white;
+border-radius:8px;
+cursor:pointer;
+}
+
+button:hover{
+background:#3e8e41;
+}
+
+table{
+width:100%;
+margin-top:15px;
+border-collapse:collapse;
+}
+
+td,th{
+padding:8px;
+border-bottom:1px solid #eee;
+}
+
+#login{
+margin-top:100px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="login">
+
+<h2>Controle de Peso</h2>
+
+<p>Digite a senha para acessar</p>
+
+<input type="password" id="senha" placeholder="Senha">
+
+<br><br>
+
+<button onclick="entrar()">Entrar</button>
+
+<p id="erro" style="color:red"></p>
+
+</div>
+
+
+<div id="app" style="display:none">
+
+<h1>📊 Controle de Peso</h1>
+
+
+<div class="card">
+
+<h2>Emerson</h2>
+
+Meta:
+<input type="number" id="metaE">
+<button onclick="salvarMeta('E')">Salvar</button>
+
+<br><br>
+
+<input type="date" id="dataE">
+<input type="number" id="pesoE" placeholder="Peso">
+
+<button onclick="addPeso('E')">Salvar Peso</button>
+
+<table id="tabelaE">
+<tr>
+<th>Data</th>
+<th>Peso</th>
+<th>Excluir</th>
+</tr>
+</table>
+
+<canvas id="graficoE"></canvas>
+
+</div>
+
+
+<div class="card">
+
+<h2>Maiara</h2>
+
+Meta:
+<input type="number" id="metaM">
+<button onclick="salvarMeta('M')">Salvar</button>
+
+<br><br>
+
+<input type="date" id="dataM">
+<input type="number" id="pesoM" placeholder="Peso">
+
+<button onclick="addPeso('M')">Salvar Peso</button>
+
+<table id="tabelaM">
+<tr>
+<th>Data</th>
+<th>Peso</th>
+<th>Excluir</th>
+</tr>
+</table>
+
+<canvas id="graficoM"></canvas>
+
+</div>
+
+</div>
+
+
+<script>
+
+function entrar(){
+
+let senha=document.getElementById("senha").value
+
+if(senha==="0415"){
+
+document.getElementById("login").style.display="none"
+document.getElementById("app").style.display="block"
+
+}else{
+
+document.getElementById("erro").innerText="Senha incorreta"
+
+}
+
+}
+
+
+let dadosE = JSON.parse(localStorage.getItem("pesoE")) || []
+let dadosM = JSON.parse(localStorage.getItem("pesoM")) || []
+
+let metaE = localStorage.getItem("metaE") || ""
+let metaM = localStorage.getItem("metaM") || ""
+
+document.getElementById("metaE").value = metaE
+document.getElementById("metaM").value = metaM
+
+
+function salvarMeta(pessoa){
+
+if(pessoa=="E"){
+
+metaE=document.getElementById("metaE").value
+localStorage.setItem("metaE",metaE)
+render("E")
+
+}
+
+if(pessoa=="M"){
+
+metaM=document.getElementById("metaM").value
+localStorage.setItem("metaM",metaM)
+render("M")
+
+}
+
+}
+
+
+function addPeso(pessoa){
+
+let data
+let peso
+
+if(pessoa=="E"){
+
+data=document.getElementById("dataE").value
+peso=document.getElementById("pesoE").value
+
+dadosE.push({data,peso})
+
+localStorage.setItem("pesoE",JSON.stringify(dadosE))
+
+render("E")
+
+}
+
+if(pessoa=="M"){
+
+data=document.getElementById("dataM").value
+peso=document.getElementById("pesoM").value
+
+dadosM.push({data,peso})
+
+localStorage.setItem("pesoM",JSON.stringify(dadosM))
+
+render("M")
+
+}
+
+}
+
+
+function deletar(pessoa,index){
+
+if(pessoa=="E"){
+
+dadosE.splice(index,1)
+localStorage.setItem("pesoE",JSON.stringify(dadosE))
+render("E")
+
+}
+
+if(pessoa=="M"){
+
+dadosM.splice(index,1)
+localStorage.setItem("pesoM",JSON.stringify(dadosM))
+render("M")
+
+}
+
+}
+
+
+let chartE
+let chartM
+
+
+function render(pessoa){
+
+let tabela
+let dados
+let meta
+
+if(pessoa=="E"){
+tabela=document.getElementById("tabelaE")
+dados=dadosE
+meta=metaE
+}
+
+if(pessoa=="M"){
+tabela=document.getElementById("tabelaM")
+dados=dadosM
+meta=metaM
+}
+
+tabela.innerHTML="<tr><th>Data</th><th>Peso</th><th>Excluir</th></tr>"
+
+dados.forEach((d,index)=>{
+
+tabela.innerHTML+=`
+<tr>
+<td>${d.data}</td>
+<td>${d.peso}</td>
+<td><button onclick="deletar('${pessoa}',${index})">❌</button></td>
+</tr>
+`
+
+})
+
+criarGrafico(pessoa,dados,meta)
+
+}
+
+
+function criarGrafico(pessoa,dados,meta){
+
+let datas=dados.map(d=>d.data)
+let pesos=dados.map(d=>d.peso)
+
+let metaLinha=datas.map(()=>meta)
+
+if(pessoa=="E" && chartE) chartE.destroy()
+if(pessoa=="M" && chartM) chartM.destroy()
+
+let ctx=document.getElementById("grafico"+pessoa)
+
+let grafico=new Chart(ctx,{
+
+type:"line",
+
+data:{
+
+labels:datas,
+
+datasets:[
+
+{
+label:"Peso",
+data:pesos,
+tension:0.4
+},
+
+{
+label:"Meta",
+data:metaLinha,
+borderDash:[10,5]
+}
+
+]
+
+},
+
+options:{
+plugins:{
+legend:{
+position:"bottom"
+}
+}
+}
+
+})
+
+if(pessoa=="E") chartE=grafico
+if(pessoa=="M") chartM=grafico
+
+}
+
+
+render("E")
+render("M")
+
+</script>
+
+</body>
+</html>
