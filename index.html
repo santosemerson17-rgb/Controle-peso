@@ -4,110 +4,174 @@
 <meta charset="UTF-8">
 <title>Controle de Peso</title>
 
-<link rel="manifest" href="manifest.json">
-  
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+
 body{
 font-family:Arial;
-background:#f4f6fb;
-text-align:center;
+background:#eef4ff;
+margin:0;
 padding:20px;
+text-align:center;
 }
 
 .container{
-background:white;
-padding:25px;
-border-radius:12px;
-max-width:500px;
+max-width:900px;
 margin:auto;
-box-shadow:0 5px 15px rgba(0,0,0,0.1);
 }
 
-input,button{
+h1{
+margin-bottom:30px;
+color:#0d47a1;
+}
+
+.cards{
+display:flex;
+gap:20px;
+justify-content:center;
+flex-wrap:wrap;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:12px;
+width:350px;
+box-shadow:0 5px 15px rgba(0,0,0,0.1);
+position:relative;
+border-top:6px solid #1976d2;
+}
+
+.metaBox{
+position:absolute;
+top:10px;
+right:10px;
+background:#1976d2;
+color:white;
+padding:8px 12px;
+border-radius:8px;
+font-size:14px;
+}
+
+input{
 padding:10px;
 margin:5px;
+width:80%;
 font-size:16px;
+border:1px solid #ccc;
+border-radius:6px;
 }
 
 button{
-background:#4CAF50;
-color:white;
+padding:10px 15px;
 border:none;
 border-radius:6px;
 cursor:pointer;
+font-size:15px;
+background:#1976d2;
+color:white;
 }
 
 button:hover{
-background:#45a049;
+background:#0d47a1;
+}
+
+.delete{
+background:#e53935;
 }
 
 table{
 width:100%;
-margin-top:20px;
+margin-top:15px;
 border-collapse:collapse;
 }
 
-td,th{
-border-bottom:1px solid #ddd;
+th,td{
 padding:8px;
+border-bottom:1px solid #ddd;
 }
 
-.delete{
-background:red;
+canvas{
+margin-top:40px;
 }
+
 </style>
 </head>
 
 <body>
 
-<div id="login" class="container">
+<div class="container">
 
-<h2>Login</h2>
+<h1>Controle de Peso</h1>
 
-<input type="password" id="senha" placeholder="Digite a senha">
-<br><br>
+<div class="cards">
 
-<button onclick="entrar()">Entrar</button>
+<div class="card">
 
+<div class="metaBox" id="restaEmerson">
+Meta
 </div>
 
+<h2>Emerson</h2>
 
-<div id="app" class="container" style="display:none">
+<input id="metaEmerson" type="number" placeholder="Meta de peso">
+<button onclick="salvarMeta('Emerson','metaEmerson')">Salvar Meta</button>
 
-<h2>Controle de Peso</h2>
+<br><br>
 
-<h3>Meta Emerson</h3>
-<input id="metaEmerson" type="number">
-<button onclick="salvarMeta('emerson')">Salvar</button>
-
-<h3>Meta Maiara</h3>
-<input id="metaMaiara" type="number">
-<button onclick="salvarMeta('maiara')">Salvar</button>
-
-<hr>
-
-<h3>Adicionar Peso</h3>
-
-<input id="nome" placeholder="Nome (Emerson ou Maiara)">
-<input id="peso" type="number" placeholder="Peso">
-
-<button onclick="addPeso()">Salvar Peso</button>
+<input id="pesoEmerson" type="number" placeholder="Peso atual">
+<button onclick="addPeso('Emerson','pesoEmerson')">Salvar Peso</button>
 
 <table>
 <thead>
 <tr>
-<th>Nome</th>
 <th>Peso</th>
 <th>Data</th>
 <th></th>
 </tr>
 </thead>
 
-<tbody id="tabela"></tbody>
+<tbody id="listaEmerson"></tbody>
 
 </table>
+
+</div>
+
+
+<div class="card">
+
+<div class="metaBox" id="restaMaiara">
+Meta
+</div>
+
+<h2>Maiara</h2>
+
+<input id="metaMaiara" type="number" placeholder="Meta de peso">
+<button onclick="salvarMeta('Maiara','metaMaiara')">Salvar Meta</button>
+
+<br><br>
+
+<input id="pesoMaiara" type="number" placeholder="Peso atual">
+<button onclick="addPeso('Maiara','pesoMaiara')">Salvar Peso</button>
+
+<table>
+
+<thead>
+<tr>
+<th>Peso</th>
+<th>Data</th>
+<th></th>
+</tr>
+</thead>
+
+<tbody id="listaMaiara"></tbody>
+
+</table>
+
+</div>
+
+</div>
 
 <canvas id="grafico"></canvas>
 
@@ -124,9 +188,9 @@ addDoc,
 onSnapshot,
 deleteDoc,
 doc,
-setDoc
+setDoc,
+getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
 
 const firebaseConfig = {
 apiKey: "AIzaSyDr3ZxfGM1u3BtIynjphlJVbfs1xc_NlOI",
@@ -140,47 +204,50 @@ appId: "1:718085986151:web:683b1caef3258c957181c2"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const tabela = document.getElementById("tabela");
+const listaEmerson = document.getElementById("listaEmerson");
+const listaMaiara = document.getElementById("listaMaiara");
 
-let dados = [];
+let metas = {};
+let dados=[];
 
-const ctx = document.getElementById("grafico");
+const ctx=document.getElementById("grafico");
 
-const chart = new Chart(ctx,{
+const chart=new Chart(ctx,{
 type:"line",
 data:{
 labels:[],
-datasets:[{
-label:"Peso",
-data:[]
-}]
+datasets:[
+{
+label:"Emerson",
+data:[],
+borderWidth:3
+},
+{
+label:"Maiara",
+data:[],
+borderWidth:3
+}
+]
 }
 });
 
-window.entrar = function(){
+window.salvarMeta=async function(nome,input){
 
-const senha = document.getElementById("senha").value;
+const valor=document.getElementById(input).value;
 
-if(senha === "1234"){   // MUDE A SENHA AQUI
+await setDoc(doc(db,"metas",nome),{
+meta:Number(valor)
+});
 
-document.getElementById("login").style.display="none";
-document.getElementById("app").style.display="block";
-
-}else{
-
-alert("Senha incorreta");
+metas[nome]=Number(valor);
 
 }
 
-}
+window.addPeso=async function(nome,inputId){
 
+const peso=document.getElementById(inputId).value;
 
-window.addPeso = async function(){
-
-const nome = document.getElementById("nome").value;
-const peso = document.getElementById("peso").value;
-
-if(!nome || !peso) return;
+if(!peso) return;
 
 await addDoc(collection(db,"pesos"),{
 nome,
@@ -188,54 +255,67 @@ peso:Number(peso),
 data:new Date().toLocaleDateString()
 });
 
-document.getElementById("peso").value="";
+document.getElementById(inputId).value="";
+
 }
 
-window.salvarMeta = async function(nome){
+window.deletar=async function(id){
 
-let valor;
+await deleteDoc(doc(db,"pesos",id));
 
-if(nome=="emerson"){
-valor=document.getElementById("metaEmerson").value;
-}else{
-valor=document.getElementById("metaMaiara").value;
 }
 
-await setDoc(doc(db,"metas",nome),{
-meta:Number(valor)
-});
-}
+function atualizar(){
 
+listaEmerson.innerHTML="";
+listaMaiara.innerHTML="";
 
-function atualizarTabela(){
+const pesosEmerson=[];
+const pesosMaiara=[];
+const datas=[];
 
-tabela.innerHTML="";
+let ultimoEmerson=null;
+let ultimoMaiara=null;
 
-dados.forEach((d)=>{
+dados.forEach(d=>{
 
 const tr=document.createElement("tr");
 
 tr.innerHTML=`
-<td>${d.nome}</td>
 <td>${d.peso}</td>
 <td>${d.data}</td>
 <td><button class="delete" onclick="deletar('${d.id}')">X</button></td>
 `;
 
-tabela.appendChild(tr);
+if(d.nome=="Emerson"){
+listaEmerson.appendChild(tr);
+pesosEmerson.push(d.peso);
+ultimoEmerson=d.peso;
+}else{
+listaMaiara.appendChild(tr);
+pesosMaiara.push(d.peso);
+ultimoMaiara=d.peso;
+}
+
+datas.push(d.data);
 
 });
 
-chart.data.labels=dados.map(d=>d.data);
-chart.data.datasets[0].data=dados.map(d=>d.peso);
+chart.data.labels=datas;
+chart.data.datasets[0].data=pesosEmerson;
+chart.data.datasets[1].data=pesosMaiara;
 
 chart.update();
 
+if(metas["Emerson"] && ultimoEmerson){
+document.getElementById("restaEmerson").innerText=
+"Faltam "+(ultimoEmerson-metas["Emerson"]).toFixed(1)+" kg";
 }
 
-window.deletar = async function(id){
-
-await deleteDoc(doc(db,"pesos",id));
+if(metas["Maiara"] && ultimoMaiara){
+document.getElementById("restaMaiara").innerText=
+"Faltam "+(ultimoMaiara-metas["Maiara"]).toFixed(1)+" kg";
+}
 
 }
 
@@ -252,7 +332,7 @@ id:doc.id,
 
 });
 
-atualizarTabela();
+atualizar();
 
 });
 
@@ -260,4 +340,3 @@ atualizarTabela();
 
 </body>
 </html>
-
