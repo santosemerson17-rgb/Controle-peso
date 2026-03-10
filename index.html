@@ -1,361 +1,258 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Controle de Peso</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-
 body{
 font-family:Arial;
-background:linear-gradient(135deg,#4facfe,#00f2fe);
-margin:0;
-padding:20px;
+background:#f4f6fb;
 text-align:center;
-}
-
-h1{
-color:white;
-}
-
-.card{
-background:white;
-border-radius:15px;
 padding:20px;
-margin:20px auto;
-max-width:500px;
-box-shadow:0 10px 30px rgba(0,0,0,0.2);
 }
 
-input{
+.container{
+background:white;
+padding:25px;
+border-radius:12px;
+max-width:500px;
+margin:auto;
+box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+
+input,button{
 padding:10px;
 margin:5px;
-border-radius:8px;
-border:1px solid #ccc;
+font-size:16px;
 }
 
 button{
-padding:10px 15px;
-border:none;
 background:#4CAF50;
 color:white;
-border-radius:8px;
+border:none;
+border-radius:6px;
 cursor:pointer;
 }
 
 button:hover{
-background:#3e8e41;
+background:#45a049;
 }
 
 table{
 width:100%;
-margin-top:15px;
+margin-top:20px;
 border-collapse:collapse;
 }
 
 td,th{
+border-bottom:1px solid #ddd;
 padding:8px;
-border-bottom:1px solid #eee;
 }
 
-#login{
-margin-top:100px;
+.delete{
+background:red;
 }
-
 </style>
-
 </head>
 
 <body>
 
-<div id="login">
+<div id="login" class="container">
 
-<h2>Controle de Peso</h2>
+<h2>Login</h2>
 
-<p>Digite a senha para acessar</p>
-
-<input type="password" id="senha" placeholder="Senha">
-
+<input type="password" id="senha" placeholder="Digite a senha">
 <br><br>
 
 <button onclick="entrar()">Entrar</button>
 
-<p id="erro" style="color:red"></p>
-
 </div>
 
 
-<div id="app" style="display:none">
+<div id="app" class="container" style="display:none">
 
-<h1>📊 Controle de Peso</h1>
+<h2>Controle de Peso</h2>
 
+<h3>Meta Emerson</h3>
+<input id="metaEmerson" type="number">
+<button onclick="salvarMeta('emerson')">Salvar</button>
 
-<div class="card">
+<h3>Meta Maiara</h3>
+<input id="metaMaiara" type="number">
+<button onclick="salvarMeta('maiara')">Salvar</button>
 
-<h2>Emerson</h2>
+<hr>
 
-Meta:
-<input type="number" id="metaE">
-<button onclick="salvarMeta('E')">Salvar</button>
+<h3>Adicionar Peso</h3>
 
-<br><br>
+<input id="nome" placeholder="Nome (Emerson ou Maiara)">
+<input id="peso" type="number" placeholder="Peso">
 
-<input type="date" id="dataE">
-<input type="number" id="pesoE" placeholder="Peso">
+<button onclick="addPeso()">Salvar Peso</button>
 
-<button onclick="addPeso('E')">Salvar Peso</button>
-
-<table id="tabelaE">
+<table>
+<thead>
 <tr>
-<th>Data</th>
+<th>Nome</th>
 <th>Peso</th>
-<th>Excluir</th>
+<th>Data</th>
+<th></th>
 </tr>
+</thead>
+
+<tbody id="tabela"></tbody>
+
 </table>
 
-<canvas id="graficoE"></canvas>
+<canvas id="grafico"></canvas>
 
 </div>
 
+<script type="module">
 
-<div class="card">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-<h2>Maiara</h2>
-
-Meta:
-<input type="number" id="metaM">
-<button onclick="salvarMeta('M')">Salvar</button>
-
-<br><br>
-
-<input type="date" id="dataM">
-<input type="number" id="pesoM" placeholder="Peso">
-
-<button onclick="addPeso('M')">Salvar Peso</button>
-
-<table id="tabelaM">
-<tr>
-<th>Data</th>
-<th>Peso</th>
-<th>Excluir</th>
-</tr>
-</table>
-
-<canvas id="graficoM"></canvas>
-
-</div>
-
-</div>
+import {
+getFirestore,
+collection,
+addDoc,
+onSnapshot,
+deleteDoc,
+doc,
+setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
-<script>
+const firebaseConfig = {
+apiKey: "AIzaSyDr3ZxfGM1u3BtIynjphlJVbfs1xc_NlOI",
+authDomain: "controle-e3ae5.firebaseapp.com",
+projectId: "controle-e3ae5",
+storageBucket: "controle-e3ae5.firebasestorage.app",
+messagingSenderId: "718085986151",
+appId: "1:718085986151:web:683b1caef3258c957181c2"
+};
 
-function entrar(){
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-let senha=document.getElementById("senha").value
+const tabela = document.getElementById("tabela");
 
-if(senha==="0415"){
+let dados = [];
 
-document.getElementById("login").style.display="none"
-document.getElementById("app").style.display="block"
+const ctx = document.getElementById("grafico");
+
+const chart = new Chart(ctx,{
+type:"line",
+data:{
+labels:[],
+datasets:[{
+label:"Peso",
+data:[]
+}]
+}
+});
+
+window.entrar = function(){
+
+const senha = document.getElementById("senha").value;
+
+if(senha === "1234"){   // MUDE A SENHA AQUI
+
+document.getElementById("login").style.display="none";
+document.getElementById("app").style.display="block";
 
 }else{
 
-document.getElementById("erro").innerText="Senha incorreta"
+alert("Senha incorreta");
 
 }
 
 }
 
 
-let dadosE = JSON.parse(localStorage.getItem("pesoE")) || []
-let dadosM = JSON.parse(localStorage.getItem("pesoM")) || []
+window.addPeso = async function(){
 
-let metaE = localStorage.getItem("metaE") || ""
-let metaM = localStorage.getItem("metaM") || ""
+const nome = document.getElementById("nome").value;
+const peso = document.getElementById("peso").value;
 
-document.getElementById("metaE").value = metaE
-document.getElementById("metaM").value = metaM
+if(!nome || !peso) return;
 
+await addDoc(collection(db,"pesos"),{
+nome,
+peso:Number(peso),
+data:new Date().toLocaleDateString()
+});
 
-function salvarMeta(pessoa){
-
-if(pessoa=="E"){
-
-metaE=document.getElementById("metaE").value
-localStorage.setItem("metaE",metaE)
-render("E")
-
+document.getElementById("peso").value="";
 }
 
-if(pessoa=="M"){
+window.salvarMeta = async function(nome){
 
-metaM=document.getElementById("metaM").value
-localStorage.setItem("metaM",metaM)
-render("M")
+let valor;
 
+if(nome=="emerson"){
+valor=document.getElementById("metaEmerson").value;
+}else{
+valor=document.getElementById("metaMaiara").value;
 }
 
-}
-
-
-function addPeso(pessoa){
-
-let data
-let peso
-
-if(pessoa=="E"){
-
-data=document.getElementById("dataE").value
-peso=document.getElementById("pesoE").value
-
-dadosE.push({data,peso})
-
-localStorage.setItem("pesoE",JSON.stringify(dadosE))
-
-render("E")
-
-}
-
-if(pessoa=="M"){
-
-data=document.getElementById("dataM").value
-peso=document.getElementById("pesoM").value
-
-dadosM.push({data,peso})
-
-localStorage.setItem("pesoM",JSON.stringify(dadosM))
-
-render("M")
-
-}
-
+await setDoc(doc(db,"metas",nome),{
+meta:Number(valor)
+});
 }
 
 
-function deletar(pessoa,index){
+function atualizarTabela(){
 
-if(pessoa=="E"){
+tabela.innerHTML="";
 
-dadosE.splice(index,1)
-localStorage.setItem("pesoE",JSON.stringify(dadosE))
-render("E")
+dados.forEach((d)=>{
 
-}
+const tr=document.createElement("tr");
 
-if(pessoa=="M"){
-
-dadosM.splice(index,1)
-localStorage.setItem("pesoM",JSON.stringify(dadosM))
-render("M")
-
-}
-
-}
-
-
-let chartE
-let chartM
-
-
-function render(pessoa){
-
-let tabela
-let dados
-let meta
-
-if(pessoa=="E"){
-tabela=document.getElementById("tabelaE")
-dados=dadosE
-meta=metaE
-}
-
-if(pessoa=="M"){
-tabela=document.getElementById("tabelaM")
-dados=dadosM
-meta=metaM
-}
-
-tabela.innerHTML="<tr><th>Data</th><th>Peso</th><th>Excluir</th></tr>"
-
-dados.forEach((d,index)=>{
-
-tabela.innerHTML+=`
-<tr>
-<td>${d.data}</td>
+tr.innerHTML=`
+<td>${d.nome}</td>
 <td>${d.peso}</td>
-<td><button onclick="deletar('${pessoa}',${index})">❌</button></td>
-</tr>
-`
+<td>${d.data}</td>
+<td><button class="delete" onclick="deletar('${d.id}')">X</button></td>
+`;
 
-})
+tabela.appendChild(tr);
 
-criarGrafico(pessoa,dados,meta)
+});
 
-}
+chart.data.labels=dados.map(d=>d.data);
+chart.data.datasets[0].data=dados.map(d=>d.peso);
 
-
-function criarGrafico(pessoa,dados,meta){
-
-let datas=dados.map(d=>d.data)
-let pesos=dados.map(d=>d.peso)
-
-let metaLinha=datas.map(()=>meta)
-
-if(pessoa=="E" && chartE) chartE.destroy()
-if(pessoa=="M" && chartM) chartM.destroy()
-
-let ctx=document.getElementById("grafico"+pessoa)
-
-let grafico=new Chart(ctx,{
-
-type:"line",
-
-data:{
-
-labels:datas,
-
-datasets:[
-
-{
-label:"Peso",
-data:pesos,
-tension:0.4
-},
-
-{
-label:"Meta",
-data:metaLinha,
-borderDash:[10,5]
-}
-
-]
-
-},
-
-options:{
-plugins:{
-legend:{
-position:"bottom"
-}
-}
-}
-
-})
-
-if(pessoa=="E") chartE=grafico
-if(pessoa=="M") chartM=grafico
+chart.update();
 
 }
 
+window.deletar = async function(id){
 
-render("E")
-render("M")
+await deleteDoc(doc(db,"pesos",id));
+
+}
+
+onSnapshot(collection(db,"pesos"),(snapshot)=>{
+
+dados=[];
+
+snapshot.forEach((doc)=>{
+
+dados.push({
+id:doc.id,
+...doc.data()
+});
+
+});
+
+atualizarTabela();
+
+});
 
 </script>
 
