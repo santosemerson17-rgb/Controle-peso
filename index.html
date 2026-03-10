@@ -11,33 +11,20 @@
 body{
 font-family:Arial;
 background:#eef4ff;
-margin:0;
 padding:20px;
 text-align:center;
 }
 
 .container{
-max-width:900px;
+max-width:500px;
 margin:auto;
-}
-
-h1{
-margin-bottom:30px;
-color:#0d47a1;
-}
-
-.cards{
-display:flex;
-gap:20px;
-justify-content:center;
-flex-wrap:wrap;
 }
 
 .card{
 background:white;
 padding:20px;
+margin-bottom:20px;
 border-radius:12px;
-width:350px;
 box-shadow:0 5px 15px rgba(0,0,0,0.1);
 position:relative;
 border-top:6px solid #1976d2;
@@ -49,28 +36,26 @@ top:10px;
 right:10px;
 background:#1976d2;
 color:white;
-padding:8px 12px;
-border-radius:8px;
-font-size:14px;
+padding:6px 10px;
+border-radius:6px;
+font-size:13px;
 }
 
 input{
 padding:10px;
 margin:5px;
-width:80%;
-font-size:16px;
-border:1px solid #ccc;
+font-size:15px;
 border-radius:6px;
+border:1px solid #ccc;
 }
 
 button{
 padding:10px 15px;
+background:#1976d2;
+color:white;
 border:none;
 border-radius:6px;
 cursor:pointer;
-font-size:15px;
-background:#1976d2;
-color:white;
 }
 
 button:hover{
@@ -83,7 +68,7 @@ background:#e53935;
 
 table{
 width:100%;
-margin-top:15px;
+margin-top:10px;
 border-collapse:collapse;
 }
 
@@ -92,26 +77,41 @@ padding:8px;
 border-bottom:1px solid #ddd;
 }
 
-canvas{
-margin-top:40px;
+#login{
+max-width:300px;
+margin:auto;
+background:white;
+padding:25px;
+border-radius:10px;
+box-shadow:0 5px 15px rgba(0,0,0,0.1);
 }
 
 </style>
+
 </head>
 
 <body>
+
+<div id="login">
+
+<h2>Entrar</h2>
+
+<input type="password" id="senha" placeholder="Senha">
+<br><br>
+
+<button onclick="entrar()">Entrar</button>
+
+</div>
+
+<div id="app" style="display:none">
 
 <div class="container">
 
 <h1>Controle de Peso</h1>
 
-<div class="cards">
-
 <div class="card">
 
-<div class="metaBox" id="restaEmerson">
-Meta
-</div>
+<div class="metaBox" id="restaEmerson">Meta</div>
 
 <h2>Emerson</h2>
 
@@ -120,10 +120,15 @@ Meta
 
 <br><br>
 
-<input id="pesoEmerson" type="number" placeholder="Peso atual">
-<button onclick="addPeso('Emerson','pesoEmerson')">Salvar Peso</button>
+<input id="pesoEmerson" type="number" placeholder="Peso">
+<input id="dataEmerson" type="date">
+
+<button onclick="addPeso('Emerson','pesoEmerson','dataEmerson')">
+Salvar Peso
+</button>
 
 <table>
+
 <thead>
 <tr>
 <th>Peso</th>
@@ -141,9 +146,7 @@ Meta
 
 <div class="card">
 
-<div class="metaBox" id="restaMaiara">
-Meta
-</div>
+<div class="metaBox" id="restaMaiara">Meta</div>
 
 <h2>Maiara</h2>
 
@@ -152,8 +155,12 @@ Meta
 
 <br><br>
 
-<input id="pesoMaiara" type="number" placeholder="Peso atual">
-<button onclick="addPeso('Maiara','pesoMaiara')">Salvar Peso</button>
+<input id="pesoMaiara" type="number" placeholder="Peso">
+<input id="dataMaiara" type="date">
+
+<button onclick="addPeso('Maiara','pesoMaiara','dataMaiara')">
+Salvar Peso
+</button>
 
 <table>
 
@@ -171,9 +178,9 @@ Meta
 
 </div>
 
-</div>
-
 <canvas id="grafico"></canvas>
+
+</div>
 
 </div>
 
@@ -188,9 +195,9 @@ addDoc,
 onSnapshot,
 deleteDoc,
 doc,
-setDoc,
-getDoc
+setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 
 const firebaseConfig = {
 apiKey: "AIzaSyDr3ZxfGM1u3BtIynjphlJVbfs1xc_NlOI",
@@ -204,10 +211,27 @@ appId: "1:718085986151:web:683b1caef3258c957181c2"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const listaEmerson = document.getElementById("listaEmerson");
-const listaMaiara = document.getElementById("listaMaiara");
 
-let metas = {};
+window.entrar=function(){
+
+if(document.getElementById("senha").value==="0415"){
+
+document.getElementById("login").style.display="none";
+document.getElementById("app").style.display="block";
+
+}else{
+
+alert("Senha incorreta");
+
+}
+
+}
+
+
+const listaEmerson=document.getElementById("listaEmerson");
+const listaMaiara=document.getElementById("listaMaiara");
+
+let metas={};
 let dados=[];
 
 const ctx=document.getElementById("grafico");
@@ -217,19 +241,12 @@ type:"line",
 data:{
 labels:[],
 datasets:[
-{
-label:"Emerson",
-data:[],
-borderWidth:3
-},
-{
-label:"Maiara",
-data:[],
-borderWidth:3
-}
+{label:"Emerson",data:[],borderWidth:3},
+{label:"Maiara",data:[],borderWidth:3}
 ]
 }
 });
+
 
 window.salvarMeta=async function(nome,input){
 
@@ -243,21 +260,22 @@ metas[nome]=Number(valor);
 
 }
 
-window.addPeso=async function(nome,inputId){
 
-const peso=document.getElementById(inputId).value;
+window.addPeso=async function(nome,input,dataInput){
 
-if(!peso) return;
+const peso=document.getElementById(input).value;
+const data=document.getElementById(dataInput).value;
+
+if(!peso || !data) return;
 
 await addDoc(collection(db,"pesos"),{
 nome,
 peso:Number(peso),
-data:new Date().toLocaleDateString()
+data
 });
 
-document.getElementById(inputId).value="";
-
 }
+
 
 window.deletar=async function(id){
 
@@ -265,17 +283,18 @@ await deleteDoc(doc(db,"pesos",id));
 
 }
 
+
 function atualizar(){
 
 listaEmerson.innerHTML="";
 listaMaiara.innerHTML="";
 
-const pesosEmerson=[];
-const pesosMaiara=[];
+const pesosE=[];
+const pesosM=[];
 const datas=[];
 
-let ultimoEmerson=null;
-let ultimoMaiara=null;
+let ultimoE=null;
+let ultimoM=null;
 
 dados.forEach(d=>{
 
@@ -287,14 +306,14 @@ tr.innerHTML=`
 <td><button class="delete" onclick="deletar('${d.id}')">X</button></td>
 `;
 
-if(d.nome=="Emerson"){
+if(d.nome==="Emerson"){
 listaEmerson.appendChild(tr);
-pesosEmerson.push(d.peso);
-ultimoEmerson=d.peso;
+pesosE.push(d.peso);
+ultimoE=d.peso;
 }else{
 listaMaiara.appendChild(tr);
-pesosMaiara.push(d.peso);
-ultimoMaiara=d.peso;
+pesosM.push(d.peso);
+ultimoM=d.peso;
 }
 
 datas.push(d.data);
@@ -302,22 +321,23 @@ datas.push(d.data);
 });
 
 chart.data.labels=datas;
-chart.data.datasets[0].data=pesosEmerson;
-chart.data.datasets[1].data=pesosMaiara;
+chart.data.datasets[0].data=pesosE;
+chart.data.datasets[1].data=pesosM;
 
 chart.update();
 
-if(metas["Emerson"] && ultimoEmerson){
+if(metas["Emerson"] && ultimoE){
 document.getElementById("restaEmerson").innerText=
-"Faltam "+(ultimoEmerson-metas["Emerson"]).toFixed(1)+" kg";
+"Faltam "+(ultimoE-metas["Emerson"]).toFixed(1)+" kg";
 }
 
-if(metas["Maiara"] && ultimoMaiara){
+if(metas["Maiara"] && ultimoM){
 document.getElementById("restaMaiara").innerText=
-"Faltam "+(ultimoMaiara-metas["Maiara"]).toFixed(1)+" kg";
+"Faltam "+(ultimoM-metas["Maiara"]).toFixed(1)+" kg";
 }
 
 }
+
 
 onSnapshot(collection(db,"pesos"),(snapshot)=>{
 
