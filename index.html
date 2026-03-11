@@ -82,6 +82,37 @@ border-bottom:1px solid #eee;
 margin-top:100px;
 }
 
+.status{
+margin:15px 0;
+}
+
+.pesoAtual{
+font-size:28px;
+font-weight:bold;
+color:#333;
+}
+
+.faltaMeta{
+font-size:14px;
+color:#666;
+margin-bottom:8px;
+}
+
+.barraMeta{
+width:100%;
+height:10px;
+background:#eee;
+border-radius:10px;
+overflow:hidden;
+}
+
+.progresso{
+height:10px;
+background:#4facfe;
+width:0%;
+transition:0.5s;
+}
+  
 </style>
 
 </head>
@@ -116,6 +147,18 @@ margin-top:100px;
 
 <h2>Emerson</h2>
 
+<div class="status">
+
+<div class="pesoAtual" id="pesoAtualE">-- kg</div>
+
+<div class="faltaMeta" id="faltaMetaE"></div>
+
+<div class="barraMeta">
+<div class="progresso" id="barraE"></div>
+</div>
+
+</div>
+  
 Meta:
 <input type="number" id="metaE">
 <button onclick="salvarMeta('E')">Salvar</button>
@@ -146,6 +189,18 @@ Meta:
 
 <h2>Maiara</h2>
 
+<div class="status">
+
+<div class="pesoAtual" id="pesoAtualM">-- kg</div>
+
+<div class="faltaMeta" id="faltaMetaM"></div>
+
+<div class="barraMeta">
+<div class="progresso" id="barraM"></div>
+</div>
+
+</div>
+  
 Meta:
 <input type="number" id="metaM">
 <button onclick="salvarMeta('M')">Salvar</button>
@@ -419,6 +474,7 @@ if ("serviceWorker" in navigator) {
 
 </body>
 </html>
+
 
 
 
